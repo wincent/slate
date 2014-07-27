@@ -181,7 +181,9 @@ bool CGSEventIsAppUnresponsive(CGSConnectionID cid, const ProcessSerialNumber *p
   BOOL couldFocus = YES;
   CFTypeRef _window;
   pid_t focusPID = [app processIdentifier];
-  AXUIElementCopyAttributeValue(AXUIElementCreateApplication(focusPID), (CFStringRef)NSAccessibilityFocusedWindowAttribute, (CFTypeRef *)&_window);
+  AXUIElementRef _app = AXUIElementCreateApplication(focusPID);
+  AXUIElementCopyAttributeValue(_app, (CFStringRef)NSAccessibilityFocusedWindowAttribute, (CFTypeRef *)&_window);
+  CFRelease(_app);
   if (_window == NULL) return [AccessibilityWrapper focusApp:app];
   if (AXUIElementSetAttributeValue((AXUIElementRef)_window, (CFStringRef)NSAccessibilityMainAttribute, kCFBooleanTrue) != kAXErrorSuccess) {
     SlateLogger(@"ERROR: Could not change focus to window");
@@ -245,12 +247,17 @@ bool CGSEventIsAppUnresponsive(CGSConnectionID cid, const ProcessSerialNumber *p
 }
 
 + (CFArrayRef)windowsInRunningApp:(NSRunningApplication *)app {
-  return [AccessibilityWrapper windowsInApp:AXUIElementCreateApplication([app processIdentifier])];
+  AXUIElementRef _app = AXUIElementCreateApplication([app processIdentifier]);
+  CFArrayRef windows = [AccessibilityWrapper windowsInApp:_app];
+  CFRelease(_app);
+  return windows;
 }
 
 + (AXUIElementRef)focusedWindowInRunningApp:(NSRunningApplication *)app {
   CFTypeRef _window;
-  AXUIElementCopyAttributeValue(AXUIElementCreateApplication([app processIdentifier]), (CFStringRef)NSAccessibilityFocusedWindowAttribute, (CFTypeRef *)&_window);
+  AXUIElementRef _app = AXUIElementCreateApplication([app processIdentifier]);
+  AXUIElementCopyAttributeValue(_app, (CFStringRef)NSAccessibilityFocusedWindowAttribute, (CFTypeRef *)&_window);
+  CFRelease(_app);
   return _window;
 }
 
